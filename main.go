@@ -20,6 +20,7 @@ func main() {
 	}
 }
 
+// user function
 func testFunction(name string) error {
 	_, err := testExternalService()
 	if err != nil {
@@ -28,6 +29,7 @@ func testFunction(name string) error {
 	return nil
 }
 
+// supposed external service
 func testExternalService() (bool, error) {
 	time.Sleep(100 * time.Millisecond)
 	x := rand.Intn(7)
