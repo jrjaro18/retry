@@ -13,7 +13,7 @@ type RetryResult struct {
 	Error   error // Contains any error encountered during the retry attempt
 }
 
-// Retry initiates the retry process based on the given configuration and retry function.
+// Retry initiates the retry process based on the given configuration and retry function and returns a channel carrying result for every retry
 //
 // It returns a channel that will receive RetryResult values.
 func Retry(ctx context.Context, conf config.Config, fn func() error) <-chan RetryResult {
