@@ -5,30 +5,27 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
-	"sync"
 	"time"
 
-	cf "github.com/jrjaro18/retry/config"
-	re "github.com/jrjaro18/retry/retry"
+	"github.com/jrjaro18/retry/config"
+	"github.com/jrjaro18/retry/retry"
 )
 
 func main() {
-	config := cf.NewConfig(cf.WithInterval(1*time.Second), cf.WithMaxRetries(10), cf.WithRetryMethod(cf.Normal))
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	// arg 1
+	config := config.NewConfig(config.WithInterval(1*time.Second), config.WithMaxRetries(10), config.WithRetryMethod(config.Normal))
+	// arg 2
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+	// arg 3
+	fn := func() error {
+		return testFunction("jrjaro18")
+	}
 
-	chRR := re.Retry(ctx, config, func() error {
-		return testFunction("rohan")
-	})
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for r := range chRR {
-			log.Printf("%+v\n", r)
-		}
-	}()
-	wg.Wait()
+	chRR := retry.Retry(ctx, config, fn)
+	for r := range chRR {
+		log.Printf("%+v\n", r)
+	}
 }
 
 // user function
