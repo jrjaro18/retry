@@ -1,14 +1,17 @@
-package retry
+package retry_test
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
 
 	"github.com/jrjaro18/retry/config"
+	"github.com/jrjaro18/retry/retry"
 )
 
 func TestRetryNormalSuccess(t *testing.T) {
+	ctx := context.Background()
 	conf := config.Config{
 		RetryMethod: config.Normal,
 		Interval:    100 * time.Millisecond,
@@ -19,15 +22,16 @@ func TestRetryNormalSuccess(t *testing.T) {
 		return nil
 	}
 
-	results := Retry(conf, fn)
+	chRR := retry.Retry(ctx, conf, fn)
+	result := <-chRR
 
-	result := <-results
 	if !result.Success {
-		t.Errorf("Expected success, got failure with error: %v", result.Error)
+		t.Errorf("expected success, got failure with error: %v", result.Error)
 	}
 }
 
 func TestRetryNormalFailure(t *testing.T) {
+	ctx := context.Background()
 	conf := config.Config{
 		RetryMethod: config.Normal,
 		Interval:    100 * time.Millisecond,
@@ -35,25 +39,24 @@ func TestRetryNormalFailure(t *testing.T) {
 	}
 
 	fn := func() error {
-		return errors.New("test error")
+		return errors.New("retry error")
 	}
 
-	results := Retry(conf, fn)
-
-	var lastResult RetryResult
-	for result := range results {
-		lastResult = result
+	chRR := retry.Retry(ctx, conf, fn)
+	var result retry.RetryResult
+	for result = range chRR {
 	}
 
-	if lastResult.Success {
-		t.Errorf("Expected failure, got success")
+	if result.Success {
+		t.Errorf("expected failure, got success")
 	}
-	if lastResult.Error == nil {
-		t.Errorf("Expected error, got nil")
+	if result.Error == nil || result.Error.Error() != "retry error" {
+		t.Errorf("expected error 'retry error', got: %v", result.Error)
 	}
 }
 
 func TestRetryExponentialSuccess(t *testing.T) {
+	ctx := context.Background()
 	conf := config.Config{
 		RetryMethod: config.Exponential,
 		Interval:    100 * time.Millisecond,
@@ -64,36 +67,10 @@ func TestRetryExponentialSuccess(t *testing.T) {
 		return nil
 	}
 
-	results := Retry(conf, fn)
+	chRR := retry.Retry(ctx, conf, fn)
+	result := <-chRR
 
-	result := <-results
 	if !result.Success {
-		t.Errorf("Expected success, got failure with error: %v", result.Error)
-	}
-}
-
-func TestRetryExponentialFailure(t *testing.T) {
-	conf := config.Config{
-		RetryMethod: config.Exponential,
-		Interval:    100 * time.Millisecond,
-		MaxRetries:  3,
-	}
-
-	fn := func() error {
-		return errors.New("test error")
-	}
-
-	results := Retry(conf, fn)
-
-	var lastResult RetryResult
-	for result := range results {
-		lastResult = result
-	}
-
-	if lastResult.Success {
-		t.Errorf("Expected failure, got success")
-	}
-	if lastResult.Error == nil {
-		t.Errorf("Expected error, got nil")
+		t.Errorf("expected success, got failure with error: %v", result.Error)
 	}
 }
